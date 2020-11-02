@@ -12,18 +12,18 @@ if (NODE_ENV === 'development') {
 import serviceCommSetup from './inter-service-comm';
 import serverConfig from './server-config';
 
-const debug = Debug('user-auth:server');
+const debug = Debug('authorization:server');
 const server = express();
 const nc = nats.connect({ url: NATS_CONNECTION_URI, json: true });
 
 const port = PORT || 3000;
 
+serverConfig(server);
+serviceCommSetup(nc);
+
 server.get('/healthcheck', (_, res) => {
   res.status(200).end();
 });
-
-serverConfig(server);
-serviceCommSetup(nc);
 
 server.all('*', (_, res) => {
   res.json({ voice: 'knock knock...' });

@@ -1,8 +1,8 @@
-import { Ability, AbilityBuilder, PureAbility } from '@casl/ability';
+import { Ability, AbilityBuilder, PureAbility, AbilityClass } from '@casl/ability';
 
 type Role = 'member' | 'admin' | 'moderator';
 
-export interface User {
+export interface IUser {
   id: number;
   username: string;
   email?: string;
@@ -10,33 +10,40 @@ export interface User {
   role: Role;
 }
 
-export interface Category {
+export interface ICategory {
   parent_id: number;
   name: string;
 }
 
-export interface Post {
-  title: string;
-  sticky: boolean;
-  category: number;
-  body: string;
-  author_id: number;
+export interface IPost {
+  title?: string;
+  sticky?: boolean;
+  category?: number;
+  body?: string;
+  author_id?: number;
   images?: string;
 }
 
-export interface Comment {
-  post_id: number;
-  parent_id: number;
-  body: string;
-  author_id: number;
+export interface IComment {
+  post_id?: number;
+  parent_id?: number;
+  body?: string;
+  author_id?: number;
 }
 
-type DefinePermissions = (user: User, builder: AbilityBuilder<Ability>) => void;
+type Actions = 'create' | 'read' | 'update' | 'delete';
+type Subjects = IUser | IPost | IComment | 'Article' | 'Comment' | 'User';
+
+type AppAbility = Ability<[Actions, Subjects]>;
+const AppAbility = Ability as AbilityClass<AppAbility>;
+
+type DefinePermissions = (user: IUser, builder: AbilityBuilder<Ability>) => void;
 
 const rolePermissions: Record<Role, DefinePermissions> = {
   member(user, { can, cannot }) {
     can('manage', 'User', { id: user.id });
-    can('manage', ['Post', 'Comment'], { author_id: user.id });
+    can('update', ['Post', 'Comment'], { author_id: user.id });
+    can('delete', 'Post', { author_id: user.id });
     cannot('update', 'Post', ['sticky', 'category']);
   },
   moderator(user, { can }) {
@@ -50,10 +57,10 @@ const rolePermissions: Record<Role, DefinePermissions> = {
   },
 };
 
-export function defineAbilityFor(user: User): PureAbility {
-  const builder = new AbilityBuilder<Ability>(Ability);
+export const defineAbilityFor = (user: IUser): AppAbility => {
+  const builder = new AbilityBuilder<AppAbility>(AppAbility);
 
   rolePermissions[user.role](user, builder);
 
   return builder.build();
-}
+};
